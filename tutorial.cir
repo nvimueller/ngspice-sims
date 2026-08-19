@@ -1,0 +1,124 @@
+* ==============================================================
+* CMOS INVERTER TUTORIAL WITH 10fF LOAD
+* ngspice with pulse input + delay + power measurements
+* ==============================================================
+
+** 1. POWER SUPPLIES
+Vdd vdd 0 DC 1.8
+* Vdd: name of source
+* vdd: positive node
+* 0:   ground node  
+* DC:  DC value type
+* 1.8: voltage in Volts
+
+** 2. INPUT PULSE SOURCE
+Vin in 0 PULSE(0 1.8 0 0.1n 0.1n 50n 100n)
+* Vin:  name of source
+* in:   positive node connected to inverter input
+* 0:    ground node
+* PULSE(V1 V2 TD TR TF PW PER): pulse waveform
+*   V1  = 0      : Initial voltage in Volts
+*   V2  = 1.8    : Pulsed voltage in Volts  
+*   TD  = 0      : Delay time before first pulse starts, in seconds
+*   TR  = 0.1n   : Rise time 0->1, in seconds. n = nano
+*   TF  = 0.1n   : Fall time 1->0, in seconds
+*   PW  = 50n    : Pulse Width, time signal stays at V2, in seconds
+*   PER = 100n   : Period of the pulse, in seconds. 100ns = 10MHz
+
+** 3. TRANSISTORS
+* Format: M<name> <drain> <gate> <source> <bulk> <model> L=<val> W=<val> [AD=<val> AS=<val> PD=<val> PS=<val>]
+M1 out in vdd vdd pmos L=0.18u W=0.5u
+* M1:    PMOS transistor name
+* out:   Drain node = inverter output
+* in:    Gate node = inverter input  
+* vdd:   Source node = tied to Vdd
+* vdd:   Bulk/Body node = tied to Vdd for PMOS
+* pmos:  Model name
+* L=0.18u: Channel Length = 0.18 um
+* W=0.5u:  Channel Width  = 0.5 um
+
+M2 out in 0 0 nmos L=0.18u W=0.25u
+* M2:    NMOS transistor name
+* out:   Drain node = inverter output
+* in:    Gate node = inverter input
+* 0:     Source node = tied to GND
+* 0:     Bulk/Body node = tied to GND for NMOS
+* nmos:  Model name  
+* L=0.18u: Channel Length = 0.18 um
+* W=0.25u: Channel Width  = 0.25 um. Smaller than PMOS because electrons are faster
+
+** 4. LOAD CAPACITANCE
+Cload out 0 10f
+* Cload: name of capacitor
+* out:   positive node connected to output
+* 0:     negative node connected to ground
+* 10f:   Capacitance value = 10 fF = 10e-15 Farads
+
+** 5. MOSFET MODELS - LEVEL 1 SIMPLE MODEL
+.model nmos nmos level=1 vto=0.4 kp=120u lambda=0.06
+* .model: defines a model
+* nmos:  model name to reference above
+* nmos:  model type
+* level=1: Shichman-Hodges model. Simplest, good for hand calc
+* vto=0.4:   Threshold voltage Vth in Volts
+* kp=120u:   Transconductance parameter u_n*Cox in A/V^2
+* lambda=0.06: Channel length modulation in 1/V
+
+.model pmos pmos level=1 vto=-0.4 kp=40u lambda=0.06
+* vto=-0.4:  Negative threshold for PMOS
+* kp=40u:    Lower mobility for holes
+* lambda=0.06: Same channel length modulation
+
+** 6. SIMULATION COMMANDS
+.tran 0.05n 200n
+* .tran: Transient analysis
+* 0.05n: Timestep = 0.05 ns. Must be << rise time for accuracy
+* 200n:  Stop time = 200 ns. Simulates 2 full periods
+
+** 7. MEASUREMENT COMMANDS
+* Format: .measure tran <result_name> <type> <args>
+* 'tran' means measure after transient sim
+
+* DELAY MEASUREMENTS: 50% Vdd crossing = 0.9V for 1.8V supply
+.measure tran tphl trig v(in) val=0.9 rise=1 targ v(out) val=0.9 fall=1
+* tphl:  name of result = tPHL High to Low delay
+* trig:  Trigger condition to start timer
+*   v(in):  monitor input voltage
+*   val=0.9: when it crosses 0.9V
+*   rise=1:  on the 1st rising edge
+* targ:  Target condition to stop timer
+*   v(out): monitor output voltage
+*   val=0.9: when it crosses 0.9V  
+*   fall=1: on the 1st falling edge
+
+.measure tran tplh trig v(in) val=0.9 fall=1 targ v(out) val=0.9 rise=1
+* tplh: tPLH Low to High delay. Opposite edges of tphl
+
+.measure tran tpd param='(tphl+tplh)/2'
+* tpd: Average propagation delay
+* param: calculate from previous measurements
+
+* SLEW RATE MEASUREMENTS: 20% to 80% points
+.measure tran trise trig v(out) val=0.36 rise=1 targ v(out) val=1.44 rise=1
+* trise: Output rise time
+* 0.36 = 20% of 1.8V, 1.44 = 80% of 1.8V
+
+.measure tran tfall trig v(out) val=1.44 fall=1 targ v(out) val=0.36 fall=1
+* tfall: Output fall time
+
+* POWER MEASUREMENT
+.measure tran pavg avg p(vdd) from=50n to=150n
+* pavg: Average power
+* avg:  take average
+* p(vdd): instantaneous power from Vdd source = V * I
+* from=50n to=150n: only average over 1 full period to avoid startup
+
+** 8. SAVE NODES FOR PLOTTING
+.save v(in) v(out) i(vdd)
+* .save: save these for plot after sim
+* v(in):  input voltage waveform
+* v(out): output voltage waveform  
+* i(vdd): current from supply, used for power
+
+.end
+* .end: end of netlist
