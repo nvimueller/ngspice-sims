@@ -1,65 +1,31 @@
-import subprocess
-import os
-from bokeh.plotting import figure, output_file, save
+import pandas as pd
+from bokeh.plotting import figure, show, output_file
 
-CIR_FILE = "inverter.cir"
-RAW_FILE = "inverter.raw"
-HTML_FILE = "inverter.html"
+# 1. Read exported ngspice file (whitespace-delimited)
+# ngspice duplicates the x-axis (time) for each variable requested in wrdata
+data = pd.read_csv("output.txt", delim_whitespace=True, header=None)
 
-print("Running ngspice...")
-# Run sim, then write ascii file, then exit. All in 1 command
-cmd = f"ngspice -b {CIR_FILE} -c 'run; set wr_vecnames; write {RAW_FILE} v(in) v(out) v(vdd) time; exit'"
-result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+time_ns = data[0] * 1e6  # Convert seconds to microseconds
+v_in = data[1]
+v_out = data[3]
 
-if not os.path.exists(RAW_FILE):
-    print("ngspice output:")
-    print(result.stdout)
-    print(result.stderr)
-    exit(1)
+# 2. Setup Bokeh figure
+output_file("simulation_results.html")
+p = figure(
+    title="ngspice Transient Simulation",
+    x_axis_label="Time (µs)",
+    y_axis_label="Voltage (V)",
+    width=800,
+    height=400,
+    tools="pan,wheel_zoom,box_zoom,reset,hover,save"
+)
 
-with open(RAW_FILE, encoding="latin-1") as f:
-    lines = f.readlines()
+# 3. Add lines
+p.line(time_ns, v_in, legend_label="V(in)", line_width=2, color="blue")
+p.line(time_ns, v_out, legend_label="V(out)", line_width=2, color="red")
 
-labels = []
-data = {}
-reading_data = False
+p.legend.click_policy = "hide"
 
-for line in lines:
-    line = line.strip()
-    if not line: continue
-    if line.startswith("Values:"):
-        reading_data = True
-        continue
-    if not reading_data:
-        parts = line.split()
-        if len(parts) == 2 and parts[0].isdigit():
-            labels.append(parts[1])
-            data[parts[1]] = []
-    else:
-        parts = line.split()
-        if len(parts) == len(labels):
-            for i, name in enumerate(labels):
-                data[name].append(float(parts[i]))
+# 4. Display output
+show(p)
 
-print(f"Loaded {len(data['time'])} points")
-
-output_file(HTML_FILE)
-p = figure(title="CMOS Inverter", x_axis_label="Time (s)",
-           y_axis_label="Voltage (V)", width=900, height=400,
-           background_fill_color="#1e1e1e", border_fill_color="#1e1e1e",
-           tools="pan,wheel_zoom,box_zoom,reset,hover")
-
-colors = ["#58a6ff", "#f85149", "#3fb950"]
-for i, name in enumerate(labels[1:]):
-    p.line(data['time'], data[name], legend_label=name, line_width=2, color=colors[i % len(colors)])
-
-p.xaxis.axis_label_text_color = "white"
-p.yaxis.axis_label_text_color = "white"
-p.xaxis.major_label_text_color = "white"
-p.yaxis.major_label_text_color = "white"
-p.title.text_color = "white"
-p.legend.label_text_color = "white"
-p.grid_line_color = "#333"
-
-save(p)
-print(f"Done -> termux-open {HTML_FILE}")

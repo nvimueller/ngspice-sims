@@ -1,0 +1,17 @@
+* Simple RC Low Pass Filter
+V1 in 0 PULSE(0 5 0 1n 1n 10u 20u)
+R1 in out 1k
+C1 out 0 10n
+
+.tran 10n 50u
+
+.control
+run
+* Set output format to plain numbers (optional, disables headers)
+set ascii_rawfile
+* Write time, V(in), and V(out) into output.txt
+wrdata output.txt v(in) v(out)
+.endc
+
+.end
+
