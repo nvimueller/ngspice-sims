@@ -1,7 +1,7 @@
 from bokeh.plotting import figure, save, output_file
 # from bokeh.models import CustomJS
 
-with open("output.txt", "r") as f:
+with open("data.txt", "r") as f:
     data = [line.split() for line in f if line.strip()]
 
 time_us = [float(row[0]) * 1e6 for row in data]
@@ -9,7 +9,7 @@ v_in    = [float(row[1]) for row in data]
 v_out   = [float(row[2]) for row in data]
 # i_vdd   = [float(row[3]) for row in data]
 
-output_file("results.html", title="ngspice")
+output_file("plot.html", title="ngspice")
 
 p = figure(
         title="ngspice",
@@ -38,10 +38,10 @@ touch_fix_css = """
 </style>
 """
 
-with open("results.html", "r") as f:
+with open("plot.html", "r") as f:
     html_content = f.read()
 
 html_content = html_content.replace("</head>", f"{touch_fix_css}\n</head>")
 
-with open("results.html", "w") as f:
+with open("plot.html", "w") as f:
     f.write(html_content)

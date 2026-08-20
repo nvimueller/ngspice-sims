@@ -1,0 +1,76 @@
+* ========================
+* cmos inverter simulation
+* ========================
+
+* =========
+* constants
+* =========
+
+.param voltage = 1.0V
+.param pmos_width = 400nm
+.param nmos_width = 200nm
+.param pmos_length = 100nm
+.param nmos_length = 100nm
+.param pmos_threshold = 0.2V
+.param nmos_threshold = -0.2V
+
+* ==============
+* power supplies
+* ==============
+
+vdd vdd 0 dc {voltage}
+
+* =====================
+* 2. input pulse source
+* =====================
+
+vin in 0 pulse(0 1.0 0.005n 0.1n 0.1n 5n 10n)
+
+* ==============
+* 3. transistors
+* ==============
+
+m1 out in vdd vdd pmos l={pmos_length} w={pmos_width}
+
+m2 out in 0 0 nmos l={nmos_length} w={nmos_width}
+
+* ===================
+* 4. load capacitance
+* ===================
+
+cload out 0 1fF
+
+* ================
+* 5. mosfet models
+* ================
+
+.model nmos nmos level=1 vto={nmos_threshold} kp=120u lambda=0.06
+
+.model pmos pmos level=1 vto={pmos_threshold} kp=40u lambda=0.06
+
+* ======================
+* 6. simulation commands
+* ======================
+
+.tran 0.005n 10n
+
+* =======================
+* 7. measurement commands
+* =======================
+
+* ==========================
+* 8. save nodes for plotting
+* ==========================
+
+.control
+run
+set ascii_rawfile
+set wr_singlescale
+wrdata data.txt v(in) v(out) i(vdd)
+.endc
+
+* ==============
+* end of netlist
+* ==============
+
+.end
