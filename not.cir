@@ -11,8 +11,8 @@
 .param nmos_width = 200nm
 .param pmos_length = 100nm
 .param nmos_length = 100nm
-.param pmos_threshold = 0.2V
-.param nmos_threshold = -0.2V
+.param pmos_threshold = -0.2V
+.param nmos_threshold = 0.2V
 
 * ==============
 * power supplies
