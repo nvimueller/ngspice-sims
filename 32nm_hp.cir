@@ -46,7 +46,7 @@ cload out 0 {load_capacitance}
 * 5. mosfet models
 * ================
 
-.include 32nm_hp.pm
+.include models/32nm_hp.pm
 
 * ======================
 * 6. simulation commands
@@ -59,7 +59,6 @@ cload out 0 {load_capacitance}
 * ==========================
 * 8. save nodes for plotting
 * ==========================
-
 
 .control
     let v_start = 0.2 * $&ctrl_voltage
@@ -75,10 +74,13 @@ cload out 0 {load_capacitance}
 
         meas tran tplh trig v(in) val=0.5 fall=1 targ v(out) val=0.5 rise=1
         meas tran tphl trig v(in) val=0.5 rise=1 targ v(out) val=0.5 fall=1
-
         let td = ((tplh + tphl) / 2) * 1e9
-
-        echo "$&td $&v_cur" >> 32nm_hp.txt
+        echo "$&td $&v_cur" >> plot/32nm_hp_td_th.txt
+        
+        let power = v(vdd) * i(vdd)
+        meas tran energy integ power from=0 to=10ns
+        let energy_fj = -energy * 1e15
+        echo "$&v_cur $&energy_fj" >> plot/32nm_hp_en_th.txt
 
         let v_cur = v_cur + v_step
     end

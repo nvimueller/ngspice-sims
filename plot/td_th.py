@@ -1,15 +1,13 @@
 from bokeh.plotting import figure, save, output_file
-from bokeh.models import CustomJS
 
-with open("32nm_lp.txt", "r") as file:
+with open("32nm_lp_td_th.txt", "r") as file:
     data_32nm_lp = [line.split() for line in file if line.strip()]
-with open("45nm_lp.txt", "r") as file:
+with open("45nm_lp_td_th.txt", "r") as file:
     data_45nm_lp = [line.split() for line in file if line.strip()]
-with open("32nm_hp.txt", "r") as file:
+with open("32nm_hp_td_th.txt", "r") as file:
     data_32nm_hp = [line.split() for line in file if line.strip()]
-with open("45nm_hp.txt", "r") as file:
+with open("45nm_hp_td_th.txt", "r") as file:
     data_45nm_hp = [line.split() for line in file if line.strip()]
-
 
 th_32nm_lp = [float(row[1]) for row in data_32nm_lp]
 td_32nm_lp = [float(row[0]) for row in data_32nm_lp]
@@ -20,8 +18,7 @@ td_32nm_hp = [float(row[0]) for row in data_32nm_hp]
 th_45nm_hp = [float(row[1]) for row in data_45nm_hp]
 td_45nm_hp = [float(row[0]) for row in data_45nm_hp]
 
-
-output_file("plot.html", title="ngspice")
+output_file("td_th.html", title="ngspice")
 
 plot = figure(
         title="ngspice",
@@ -55,10 +52,10 @@ touch_fix_css = """
 </style>
 """
 
-with open("plot.html", "r") as file:
+with open("td_th.html", "r") as file:
     html_content = file.read()
 
 html_content = html_content.replace("</head>", f"{touch_fix_css}\n</head>")
 
-with open("plot.html", "w") as file:
+with open("td_th.html", "w") as file:
     file.write(html_content)
