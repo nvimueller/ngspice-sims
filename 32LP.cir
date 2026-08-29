@@ -1,0 +1,74 @@
+* ========================
+* cmos inverter simulation
+* ========================
+
+* =========
+* constants
+* =========
+
+.param voltage = 1.0V
+.csparam ctrl_voltage = {voltage}
+.param pmos_width = 96nm
+.param nmos_width = 64nm
+.param pmos_length = 32nm
+.param nmos_length = 32nm
+.param load_capacitance = 1fF
+
+* ==============
+* power supplies
+* ==============
+
+vdd vdd 0 dc {voltage}
+
+* =====================
+* 2. input pulse source
+* =====================
+
+vin in 0 pulse(0 {voltage} 5ps 10ps 10ps 2ns 4ns)
+
+* ==============
+* 3. transistors
+* ==============
+
+mp out in vdd vdd pmos l={pmos_length} w={pmos_width}
+
+mn out in 0 0 nmos l={nmos_length} w={nmos_width}
+
+* ===================
+* 4. load capacitance
+* ===================
+
+cload out 0 {load_capacitance}
+
+* ================
+* 5. mosfet models
+* ================
+
+.include models/32LP.pm
+
+* ======================
+* 6. simulation commands
+* ======================
+
+* =======================
+* 7. measurement commands
+* =======================
+
+* ==========================
+* 8. save nodes for plotting
+* ==========================
+
+.control
+    tran 1ps 4ns
+
+    meas tran tplh trig v(in) val=ctrl_voltage/2 fall=1 targ v(out) val=ctrl_voltage/2 rise=1
+    meas tran tphl trig v(in) val=ctrl_voltage/2 rise=1 targ v(out) val=ctrl_voltage/2 fall=1
+    let td = ((tplh + tphl) / 2) * 1e9
+    set unit = ns 
+    echo "td                  =  $&td$unit"
+
+    set wr_singlescale
+    set wr_vecnames
+    wrdata plot/vxt.txt v(in) v(out)
+.endc
+.end
