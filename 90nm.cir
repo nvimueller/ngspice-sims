@@ -7,11 +7,10 @@
 * =========
 
 .param voltage = 1.0V
-.csparam ctrl_voltage = {voltage}
-.param pmos_width = 96nm
-.param nmos_width = 64nm
-.param pmos_length = 32nm
-.param nmos_length = 32nm
+.param pmos_width = 360nm
+.param nmos_width = 180nm
+.param pmos_length = 90nm
+.param nmos_length = 90nm
 .param load_capacitance = 1fF
 
 * ==============
@@ -24,7 +23,7 @@ vdd vdd 0 dc {voltage}
 * 2. input pulse source
 * =====================
 
-vin in 0 pulse(0 {voltage} 5ps 10ps 10ps 2ns 4ns)
+vin in 0 pulse(0 {voltage} 5ps 100ps 100ps 2ns 4ns)
 
 * ==============
 * 3. transistors
@@ -44,7 +43,7 @@ cload out 0 {load_capacitance}
 * 5. mosfet models
 * ================
 
-.include models/32LP.pm
+.include models/90nm.pm
 
 * ======================
 * 6. simulation commands
@@ -59,10 +58,10 @@ cload out 0 {load_capacitance}
 * ==========================
 
 .control
-    tran 1ps 4ns
+    tran 5fs 4ns
 
-    meas tran tplh trig v(in) val=ctrl_voltage/2 fall=1 targ v(out) val=ctrl_voltage/2 rise=1
-    meas tran tphl trig v(in) val=ctrl_voltage/2 rise=1 targ v(out) val=ctrl_voltage/2 fall=1
+    meas tran tplh trig v(in) val=0.5 fall=1 targ v(out) val=0.5 rise=1
+    meas tran tphl trig v(in) val=0.5 rise=1 targ v(out) val=0.5 fall=1
     let td = ((tplh + tphl) / 2) * 1e9
     set unit = ns 
     echo "td                  =  $&td$unit"
