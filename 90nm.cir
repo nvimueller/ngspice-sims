@@ -7,6 +7,7 @@
 * =========
 
 .param voltage = 1.0V
+.csparam ctrl_voltage = {voltage}
 .param pmos_width = 360nm
 .param nmos_width = 180nm
 .param pmos_length = 90nm
@@ -59,15 +60,38 @@ cload out 0 {load_capacitance}
 
 .control
     tran 5fs 4ns
-
+    
     meas tran tplh trig v(in) val=0.5 fall=1 targ v(out) val=0.5 rise=1
     meas tran tphl trig v(in) val=0.5 rise=1 targ v(out) val=0.5 fall=1
-    let td = ((tplh + tphl) / 2) * 1e9
+    let original_td = ((tplh + tphl) / 2) * 1e9
     set unit = ns 
-    echo "td                  =  $&td$unit"
+    echo "original td         = $&original_td$unit"
 
     set wr_singlescale
-    set wr_vecnames
-    wrdata plot/vxt.txt v(in) v(out)
+    wrdata plot/voltage.txt v(in) v(out)
+   
+    let const.v_start = 0.2
+    let const.v_stop = 0.8
+    let const.v_step = 0.01
+    let const.v_cur = const.v_start
+
+    while v_cur <= v_stop
+        altermod nmos vth0 = $&v_cur
+        altermod pmos vth0 = -$&v_cur
+
+        tran 1ps 4ns
+
+        meas tran tplh trig v(in) val=0.5 fall=1 targ v(out) val=0.5 rise=1
+        meas tran tphl trig v(in) val=0.5 rise=1 targ v(out) val=0.5 fall=1
+        let td = ((tplh + tphl) / 2) * 1e9
+
+        let power = v(vdd) * i(vdd)
+        meas tran energy integ power from=0 to=4ns
+        let energy_fj = -energy * 1e15
+
+        echo "$&v_cur $&td $&energy_fj" >> plot/data.txt
+
+        let const.v_cur = const.v_cur + const.v_step
+    end
 .endc
 .end
