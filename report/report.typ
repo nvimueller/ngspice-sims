@@ -1,6 +1,7 @@
 #set page(paper: "us-letter", margin: 2cm)
 #set text(font: "New Computer Modern", size: 10pt)
 #set par(justify: true)
+#set text(region: "gb")
 
 #align(center)[
   #text(16pt)[*Energy Dissipation and Propagation Delay as Functions of Threshold Voltage: a CMOS Study*]
@@ -20,7 +21,6 @@ My research focus has shifted from a low-power 32nm CMOS process to a standard 9
     caption: [$V_"in"$ and $V_"out"$ intersection.],
   ) <voltage_plot>
 
-
 #columns(2, gutter: 16pt)[
   #figure(
     image("delay.png", width: 95%),
@@ -28,11 +28,12 @@ My research focus has shifted from a low-power 32nm CMOS process to a standard 9
   ) <delay_plot>
   
   #colbreak()
-  
+
   #figure(
     image("energy.png", width: 95%),
     caption: [Energy dissipation as a function of threshold voltage.],
-  ) <energy_plot>  
-  #colbreak()
-  
+  ) <energy_plot>
 ]
+
+= Observations
+As shown in @voltage_plot, the transistor achieves a reasonably balanced voltage transfer characteristic, with the intersection of $V_"in"$ and $V_"out"$ occurring near, though not exactly at, 50% of the supply voltage. The configuration follows standard simulation practices, utilising a load capacitance ($C_"load"$) of $1 "fF"$, a PMOS width ($W_"p"$) of $180 "nm"$, and an NMOS width ($W_"n"$) of $360 "nm"$. This establishes a reliable baseline for the subsequent analysis. The results presented in @delay_plot and @energy_plot highlight the critical importance of properly dimensioning a CMOS transistor. They illustrate a classic design trade-off: decreasing the $V_"th"$ improves propagation delay but leads to an undesirable increase in energy dissipation. Conversely, increasing $V_"th"$ lowers energy consumption at the cost of increased delay. Therefore, a carefully balanced threshold configuration is essential. These findings demonstrate that a $V_"th"$ near 50% of $V_"dd"$ offers an optimal compromise, maximising switching speed while minimising energy consumption.
