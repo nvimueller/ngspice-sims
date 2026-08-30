@@ -24,7 +24,7 @@ vdd vdd 0 dc {voltage}
 * 2. input pulse source
 * =====================
 
-vin in 0 pulse(0 {voltage} 5ps 100ps 100ps 2ns 4ns)
+vin in 0 pulse(0 {voltage} 5ps 100ps 100ps 0.5ns 1ns)
 
 * ==============
 * 3. transistors
@@ -59,13 +59,13 @@ cload out 0 {load_capacitance}
 * ==========================
 
 .control
-    tran 5fs 4ns
+    tran 5fs 1ns
     
     meas tran tplh trig v(in) val=0.5 fall=1 targ v(out) val=0.5 rise=1
     meas tran tphl trig v(in) val=0.5 rise=1 targ v(out) val=0.5 fall=1
     let original_td = ((tplh + tphl) / 2) * 1e9
     set unit = ns 
-    echo "original td         = $&original_td$unit"
+    echo "original td         =  $&original_td$unit"
 
     set wr_singlescale
     wrdata plot/voltage.txt v(in) v(out)
@@ -79,7 +79,7 @@ cload out 0 {load_capacitance}
         altermod nmos vth0 = $&v_cur
         altermod pmos vth0 = -$&v_cur
 
-        tran 1ps 4ns
+        tran 0.1ps 1ns
 
         meas tran tplh trig v(in) val=0.5 fall=1 targ v(out) val=0.5 rise=1
         meas tran tphl trig v(in) val=0.5 rise=1 targ v(out) val=0.5 fall=1
