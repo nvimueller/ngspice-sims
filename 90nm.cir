@@ -1,3 +1,18 @@
+* 10k resistor
+* calcular por fórmulas de capacitância
+
+* consumo = integral da corrente que sai da fonte DC por transição
+* também tem consumo de curto circuito - quando ambos os transistores estão ativados
+* eixo in_slope 3D pois afeta o delay também
+* Cload x in_slope
+* Vth = Vthphi + Vthsb -> phi é sempre fixo
+* brincar com Vth não agora
+
+* FAZER VALORES DE CAPACITÂNCIA DE TODOS OS JEITOS POSSÍVEIS
+
+* RELER TEXTO DE CD
+
+
 * ========================
 * cmos inverter simulation
 * ========================
@@ -86,7 +101,7 @@ cload out 0 {load_capacitance}
         let td = ((tplh + tphl) / 2) * 1e9
 
         let power = v(vdd) * i(vdd)
-        meas tran energy integ power from=0 to=4ns
+        meas tran energy integ power from=0 to=1ns
         let energy_fj = -energy * 1e15
 
         echo "$&v_cur $&td $&energy_fj" >> plot/data.txt
