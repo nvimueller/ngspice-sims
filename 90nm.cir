@@ -1,67 +1,26 @@
-* ========================
-* cmos inverter simulation
-* ========================
-
-* =========
-* constants
-* =========
-
-.param voltage = 1.0v
-.param pmos_width = 360nm
-.param nmos_width = 180nm
-.param pmos_length = 90nm
-.param nmos_length = 90nm
-* .param load_capacitance = 1ff
-
-* ==============
-* power supplies
-* ==============
-
-vdd vdd 0 dc {voltage}
-
-* ==================
-* input pulse source
-* ==================
-
-vin in 0 pulse(0 {voltage} 5ps 10ps 10ps 0.5ns 1ns)
-
-* =========
-* resistors
-* =========
-
-* rin in rout 1k
-
-* ===========
-* transistors
-* ===========
-
-mp out in vdd vdd pmos l={pmos_length} w={pmos_width}
-
-mn out in 0 0 nmos l={nmos_length} w={nmos_width}
-
-* ================
-* load capacitance
-* ================
-
-* cload out 0 {load_capacitance}
-
-* =============
-* mosfet models
-* =============
-
 .include models/90nm.pm
 
-* ===================
-* simulation commands
-* ===================
+.param volt = 1.0V
+.param pw = 360nm
+.param nw = 180nm
+.param pl = 90nm
+.param nl = 90nm
+.param cload = 1fF
 
-* ====================
-* measurement commands
-* ====================
+vdd vdd 0 dc {volt}
 
-* =======================
-* save nodes for plotting
-* =======================
+vreg in 0 pulse(0 {volt} 5ps 10ps 10ps 0.5ns 1ns)
+vres rin 0 pulse(0 {volt} 5ps 10ps 10ps 0.5ns 1ns)
+
+res rin rout 100kΩ
+
+mprc rcout rout vdd vdd pmos l={pl} w={pw}
+mnrc rcout rout 0 0 nmos l={nl} w={nw}
+
+mp out in vdd vdd pmos l={pl} w={pw}
+mn out in 0 0 nmos l={nl} w={nw}
+
+* cap out 0 {cload}
 
 .control
     tran 5fs 1ns
@@ -78,37 +37,27 @@ mn out in 0 0 nmos l={nmos_length} w={nmos_width}
     * let energy_fj = -energy * 1e15
     * echo "$&v_cur $&td $&energy_fj" >> plot/data.txt
     
-    * ==
-    * RC
-    * ==
-    * meas tran tau_rise trig v(out) val=0.0 rise=1 targ v(out) val=0.6321 rise=1
-    * let pmos_cap = (tau_rise / 1e6) * 1e15
-    * set unit = fF 
-    * echo "pmos_cap            =  $&pmos_cap $unit"
-    * meas tran tau_fall trig v(out) val=1 fall=1 targ v(out) val=0.3679 fall=1
-    * let nmos_cap = (tau_fall / 1e6) * 1e15
-    * echo "nmos_cap            =  $&nmos_cap $unit"
+    * ===== rc =====
+    meas tran taurise trig v(rout) val=0.01 rise=1 targ v(rout) val=0.6321 rise=1 >/dev/null
+    let pc = (taurise / 1e5) * 1e15
+    meas tran taufall trig v(rout) val=0.99 fall=1 targ v(rout) val=0.3679 fall=1 >/dev/null
+    let nc = (taufall / 1e5) * 1e15
+    echo "pmos (rc)           =  $&pc  fF"
+    echo "nmos (rc)           =  $&nc  fF"
     
-    * ========
-    * INTEGRAL
-    * ========
-    * meas tran rise_charge integ i(vin) from=0 to=0.3ns
-    * let pmos_cap = -(rise_charge / 1.0) * 1e15
-    * set unit = fF 
-    * echo "pmos_cap            =  $&pmos_cap $unit"
-    * meas tran fall_charge integ i(vin) from=0.45ns to=1ns
-    * let nmos_cap = (fall_charge / 1.0) * 1e15
-    * set unit = fF 
-    * echo "nmos_cap            =  $&nmos_cap $unit"
+    * ===== integ =====
+    meas tran risecharge integ i(vreg) from=0 to=0.3ns >/dev/null
+    let pc = -(risecharge / 1.0) * 1e15
+    meas tran fallcharge integ i(vreg) from=0.45ns to=1ns >/dev/null
+    let nc = (fallcharge / 1.0) * 1e15
+    echo "pmos (integ)        =  $&pc  fF"
+    echo "nmos (integ)        =  $&nc fF"
 
-    * ========
-    * EQUATION
-    * ========
-    let pmos_cap = (((3.9 * 8.854 * 1e-12) / (2.15 * 1e-9)) * 320 * 1e-9 * 90 * 1e-9) * 1e15
-    let nmos_cap = (((3.9 * 8.854 * 1e-12) / (2.05 * 1e-9)) * 180 * 1e-9 * 90 * 1e-9) * 1e15
-    set unit = fF 
-    echo "nmos_cap            =  $&nmos_cap $unit"
-    echo "pmos_cap            =  $&pmos_cap $unit"
+    * ===== equation =====
+    let pc = (((3.9 * 8.854 * 1e-12) / (2.15 * 1e-9)) * 320 * 1e-9 * 90 * 1e-9) * 1e15
+    let nc = (((3.9 * 8.854 * 1e-12) / (2.05 * 1e-9)) * 180 * 1e-9 * 90 * 1e-9) * 1e15
+    echo "pmos (eq)           =  $&pc fF"
+    echo "nmos (eq)           =  $&nc fF"
 
 .endc
 .end
