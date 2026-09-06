@@ -23,13 +23,41 @@ mn out in 0 0 nmos l={nl} w={nw}
 * cap out 0 {cload}
 
 .control
-    tran 5fs 1ns
+    tran 10ns 1ns
     
-    * meas tran tplh trig v(in) val=0.5 fall=1 targ v(out) val=0.5 rise=1
-    * meas tran tphl trig v(in) val=0.5 rise=1 targ v(out) val=0.5 fall=1
-    * let original_td = ((tplh + tphl) / 2) * 1e9
-    * set unit = ns 
-    * echo "original td         =  $&original_td$unit"
+    * ===== rc =====
+    meas tran taurise trig v(rout) val=0.01 rise=1 targ v(rout) val=0.6321 rise=1 >/dev/null
+    let pc = (taurise / 1e5) * 1e15
+    meas tran taufall trig v(rout) val=0.99 fall=1 targ v(rout) val=0.3679 fall=1 >/dev/null
+    let nc = (taufall / 1e5) * 1e15
+    echo "pmos (rc)           =  $&pc   fF"
+    echo "nmos (rc)           =  $&nc  fF"
+    
+    * ===== integral =====
+    meas tran risecharge integ i(vreg) from=0 to=0.3ns >/dev/null
+    let pc = -(risecharge / 1.0) * 1e15
+    meas tran fallcharge integ i(vreg) from=0.45ns to=1ns >/dev/null
+    let nc = (fallcharge / 1.0) * 1e15
+    echo "pmos (integral)     =  $&pc  fF"
+    echo "nmos (integral)     =  $&nc fF"
+
+    * ===== equation =====
+    let pc = (((3.9 * 8.854 * 1e-12) / (2.15 * 1e-9)) * 320 * 1e-9 * 90 * 1e-9) * 1e15
+    let nc = (((3.9 * 8.854 * 1e-12) / (2.05 * 1e-9)) * 180 * 1e-9 * 90 * 1e-9) * 1e15
+    echo "pmos (equation)     =  $&pc fF"
+    echo "nmos (equation)     =  $&nc fF"
+
+    * ===== delays =====
+    meas tran tplhs trig v(in) val=0.5 fall=1 targ v(out) val=0.5 rise=1 >/dev/null
+    meas tran tphls trig v(in) val=0.5 rise=1 targ v(out) val=0.5 fall=1 >/dev/null
+    let td = ((tplhs + tphls) / 2) * 1e12
+    let tplh = tplhs * 1e12
+    let tphl = tphls * 1e12
+    echo "tplh                =  $&tplh μs"
+    echo "tphl                =  $&tphl μs"
+    echo "td                  =  $&td μs"
+    
+    * ===== power =====
     * set wr_singlescale
     * wrdata plot/voltage.txt v(in) v(out)
     * let power = v(vdd) * i(vdd)
@@ -37,27 +65,6 @@ mn out in 0 0 nmos l={nl} w={nw}
     * let energy_fj = -energy * 1e15
     * echo "$&v_cur $&td $&energy_fj" >> plot/data.txt
     
-    * ===== rc =====
-    meas tran taurise trig v(rout) val=0.01 rise=1 targ v(rout) val=0.6321 rise=1 >/dev/null
-    let pc = (taurise / 1e5) * 1e15
-    meas tran taufall trig v(rout) val=0.99 fall=1 targ v(rout) val=0.3679 fall=1 >/dev/null
-    let nc = (taufall / 1e5) * 1e15
-    echo "pmos (rc)           =  $&pc  fF"
-    echo "nmos (rc)           =  $&nc  fF"
-    
-    * ===== integ =====
-    meas tran risecharge integ i(vreg) from=0 to=0.3ns >/dev/null
-    let pc = -(risecharge / 1.0) * 1e15
-    meas tran fallcharge integ i(vreg) from=0.45ns to=1ns >/dev/null
-    let nc = (fallcharge / 1.0) * 1e15
-    echo "pmos (integ)        =  $&pc  fF"
-    echo "nmos (integ)        =  $&nc fF"
-
-    * ===== equation =====
-    let pc = (((3.9 * 8.854 * 1e-12) / (2.15 * 1e-9)) * 320 * 1e-9 * 90 * 1e-9) * 1e15
-    let nc = (((3.9 * 8.854 * 1e-12) / (2.05 * 1e-9)) * 180 * 1e-9 * 90 * 1e-9) * 1e15
-    echo "pmos (eq)           =  $&pc fF"
-    echo "nmos (eq)           =  $&nc fF"
 
 .endc
 .end
