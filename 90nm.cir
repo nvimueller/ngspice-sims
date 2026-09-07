@@ -5,7 +5,7 @@
 .param nw = 180nm
 .param pl = 90nm
 .param nl = 90nm
-.param cload = 1fF
+.param cload = 3.469617fF
 
 vdd vdd 0 dc {volt}
 
@@ -20,17 +20,17 @@ mnrc rcout rout 0 0 nmos l={nl} w={nw}
 mp out in vdd vdd pmos l={pl} w={pw}
 mn out in 0 0 nmos l={nl} w={nw}
 
-* cap out 0 {cload}
+cap out 0 {cload}
 
 .control
-    tran 10ns 1ns
+    tran 5fs 1ns
     
     * ===== rc =====
     meas tran taurise trig v(rout) val=0.01 rise=1 targ v(rout) val=0.6321 rise=1 >/dev/null
     let pc = (taurise / 1e5) * 1e15
     meas tran taufall trig v(rout) val=0.99 fall=1 targ v(rout) val=0.3679 fall=1 >/dev/null
     let nc = (taufall / 1e5) * 1e15
-    echo "pmos (rc)           =  $&pc   fF"
+    echo "pmos (rc)           =  $&pc  fF"
     echo "nmos (rc)           =  $&nc  fF"
     
     * ===== integral =====
@@ -38,7 +38,7 @@ mn out in 0 0 nmos l={nl} w={nw}
     let pc = -(risecharge / 1.0) * 1e15
     meas tran fallcharge integ i(vreg) from=0.45ns to=1ns >/dev/null
     let nc = (fallcharge / 1.0) * 1e15
-    echo "pmos (integral)     =  $&pc  fF"
+    echo "pmos (integral)     =  $&pc fF"
     echo "nmos (integral)     =  $&nc fF"
 
     * ===== equation =====
@@ -50,21 +50,31 @@ mn out in 0 0 nmos l={nl} w={nw}
     * ===== delays =====
     meas tran tplhs trig v(in) val=0.5 fall=1 targ v(out) val=0.5 rise=1 >/dev/null
     meas tran tphls trig v(in) val=0.5 rise=1 targ v(out) val=0.5 fall=1 >/dev/null
+    meas tran tfs trig v(out) val=0.9 fall=1 targ v(out) val=0.1 fall=1 >/dev/null
+    meas tran trs trig v(out) val=0.1 rise=1 targ v(out) val=0.9 rise=1 >/dev/null
     let td = ((tplhs + tphls) / 2) * 1e12
     let tplh = tplhs * 1e12
     let tphl = tphls * 1e12
-    echo "tplh                =  $&tplh μs"
-    echo "tphl                =  $&tphl μs"
-    echo "td                  =  $&td μs"
+    let tf = tfs * 1e12
+    let tr = trs * 1e12
+    echo "tplh                =  $&tplh ps"
+    echo "tphl                =  $&tphl ps"
+    echo "td                  =  $&td ps"
+    echo "tf                  =  $&tf ps"
+    echo "tr                  =  $&tr ps"
     
     * ===== power =====
-    * set wr_singlescale
-    * wrdata plot/voltage.txt v(in) v(out)
-    * let power = v(vdd) * i(vdd)
-    * meas tran energy integ power from=0 to=1ns
-    * let energy_fj = -energy * 1e15
-    * echo "$&v_cur $&td $&energy_fj" >> plot/data.txt
-    
+    let pow = v(vdd) * i(vdd)
+    meas tran energy integ pow from=0 to=1ns >/dev/null
+    let totalpow = -energy * (1 / 1e-9) * 1e6
+    meas tran leakcur find i(vdd) at=0.2ns >/dev/null
+    let statpow = (leakcur * 1.0) * 1e6
+    let swpow = 3.469617 * 1e-15 * (1.0 * 1.0) * (1 / 1e-9) * 1e6
+    let scpow = totalpow - statpow - swpow
+    echo "total               =  $&totalpow  μW"
+    echo "static              =  $&statpow μW"
+    echo "switch              =  $&swpow  μW"
+    echo "short-circuit       =  $&scpow   μW"
 
 .endc
 .end
