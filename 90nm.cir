@@ -1,52 +1,61 @@
 .include models/90nm.pm
 
-.param volt = 1.0V
-.param pw = 360nm
-.param nw = 180nm
-.param pl = 90nm
-.param nl = 90nm
-.param cload = 3.469617fF
+.param volt = 1.0
+.param pw = 360n
+.param pl = 90n
+.param nw = 180n
+.param nl = 90n
+.param res = 100k
+.param cload = 4 * 0.98090f
 
 vdd vdd 0 dc {volt}
 
-vreg in 0 pulse(0 {volt} 5ps 10ps 10ps 0.5ns 1ns)
-vres rin 0 pulse(0 {volt} 5ps 10ps 10ps 0.5ns 1ns)
+vin in 0 pulse(0 {volt} 5ps 10ps 10ps 0.5ns 1ns)
+vr rin 0 pulse(0 {volt} 5ps 10ps 10ps 0.5ns 1ns)
 
-res rin rout 100kΩ
+vp in voutp 0
+vn in voutn 0
+vout out vout 0
 
-mprc rcout rout vdd vdd pmos l={pl} w={pw}
-mnrc rcout rout 0 0 nmos l={nl} w={nw}
+rp rin routp {res}
+rn rin routn {res}
 
-mp out in vdd vdd pmos l={pl} w={pw}
-mn out in 0 0 nmos l={nl} w={nw}
+mprc rcout routp vdd vdd pmos l={pl} w={pw}
+mnrc rcout routn 0 0 nmos l={nl} w={nw}
 
-cap out 0 {cload}
+mp out voutp vdd vdd pmos l={pl} w={pw}
+mn out voutn 0 0 nmos l={nl} w={nw}
+
+cap vout 0 {cload}
 
 .control
     tran 5fs 1ns
     
     * ===== rc =====
-    meas tran taurise trig v(rout) val=0.01 rise=1 targ v(rout) val=0.6321 rise=1 >/dev/null
+    meas tran taurise trig v(routp) val=0.01 rise=1 targ v(routp) val=0.6321 rise=1 >/dev/null
     let pc = (taurise / 1e5) * 1e15
-    meas tran taufall trig v(rout) val=0.99 fall=1 targ v(rout) val=0.3679 fall=1 >/dev/null
+    meas tran taufall trig v(routn) val=0.99 fall=1 targ v(routn) val=0.3679 fall=1 >/dev/null
     let nc = (taufall / 1e5) * 1e15
-    echo "pmos (rc)           =  $&pc  fF"
-    echo "nmos (rc)           =  $&nc  fF"
-    
+    echo "pmos (rc)           =  $&pc fF" 
+    echo "nmos (rc)           =  $&nc  fF" 
+   
     * ===== integral =====
-    meas tran risecharge integ i(vreg) from=0 to=0.3ns >/dev/null
-    let pc = -(risecharge / 1.0) * 1e15
-    meas tran fallcharge integ i(vreg) from=0.45ns to=1ns >/dev/null
+    meas tran fallcharge integ i(vn) from=0 to=0.2ns >/dev/null
     let nc = (fallcharge / 1.0) * 1e15
+    meas tran risecharge integ i(vp) from=0.4ns to=0.6ns >/dev/null
+    let pc = -(risecharge / 1.0) * 1e15
     echo "pmos (integral)     =  $&pc fF"
     echo "nmos (integral)     =  $&nc fF"
 
     * ===== equation =====
-    let pc = (((3.9 * 8.854 * 1e-12) / (2.15 * 1e-9)) * 320 * 1e-9 * 90 * 1e-9) * 1e15
+    let pc = (((3.9 * 8.854 * 1e-12) / (2.15 * 1e-9)) * 360 * 1e-9 * 90 * 1e-9) * 1e15
     let nc = (((3.9 * 8.854 * 1e-12) / (2.05 * 1e-9)) * 180 * 1e-9 * 90 * 1e-9) * 1e15
     echo "pmos (equation)     =  $&pc fF"
     echo "nmos (equation)     =  $&nc fF"
-
+    
+    * ===== cin avg =====
+    echo "cin                 =  0.98090  fF"
+    
     * ===== delays =====
     meas tran tplhs trig v(in) val=0.5 fall=1 targ v(out) val=0.5 rise=1 >/dev/null
     meas tran tphls trig v(in) val=0.5 rise=1 targ v(out) val=0.5 fall=1 >/dev/null
@@ -67,14 +76,17 @@ cap out 0 {cload}
     let pow = v(vdd) * i(vdd)
     meas tran energy integ pow from=0 to=1ns >/dev/null
     let totalpow = -energy * (1 / 1e-9) * 1e6
-    meas tran leakcur find i(vdd) at=0.2ns >/dev/null
-    let statpow = (leakcur * 1.0) * 1e6
-    let swpow = 3.469617 * 1e-15 * (1.0 * 1.0) * (1 / 1e-9) * 1e6
-    let scpow = totalpow - statpow - swpow
     echo "total               =  $&totalpow  μW"
-    echo "static              =  $&statpow μW"
-    echo "switch              =  $&swpow  μW"
-    echo "short-circuit       =  $&scpow   μW"
+    
+    meas tran shtckt integ i(vdd) from=0.018ns to=0.114ns >/dev/null
+    meas tran loadshtckt integ i(vdd) from=0.511ns to=0.714ns >/dev/null
+    let shtcktpow = -(shtckt * 2) * (1 / 1e-9) * 1e6
+    let loadpow = -(loadshtckt - shtckt) * (1 / 1e-9) * 1e6
+    echo "short-circuit       =  $&shtcktpow  μW"
+    echo "load                =  $&loadpow  μW"
 
+    * ===== plot =====
+    plot v(in) v(out)
+    plot i(vdd) i(vout)
 .endc
 .end

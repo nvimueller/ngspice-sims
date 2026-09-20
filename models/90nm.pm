@@ -1,6 +1,6 @@
-* Beta Version released on 2/22/06
+* beta version released on 2/22/06
 
-* PTM 90nm NMOS 
+* ptm 90nm nmos 
  
 .model  nmos  nmos  level = 54
 
@@ -71,7 +71,7 @@
 +rshg    = 0.4          gbmin   = 1e-010       rbpb    = 5            rbpd    = 15         
 +rbps    = 15           rbdb    = 15           rbsb    = 15           ngcon   = 1          
 
-* PTM 90nm PMOS
+* ptm 90nm pmos
  
 .model  pmos  pmos  level = 54
 
