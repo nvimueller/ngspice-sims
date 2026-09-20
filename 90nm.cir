@@ -86,7 +86,8 @@ cap vout 0 {cload}
     echo "load                =  $&loadpow  μW"
 
     * ===== plot =====
-    plot v(in) v(out)
-    plot i(vdd) i(vout)
+    * plot v(in) v(out)
+    * plot i(vdd) i(vout)
+    plot v(rin) v(rcout)
 .endc
 .end
