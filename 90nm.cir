@@ -29,9 +29,12 @@ mn out voutn 0 0 nmos l={nl} w={nw}
 cap vout 0 {cload}
 
 .control
-    tran 5fs 1ns
+    set nounits
     
-    * ===== rc =====
+    * ########## tran ##########
+    tran 100fs 1ns
+
+    * ========== rc ==========
     meas tran taurise trig v(routp) val=0.01 rise=1 targ v(routp) val=0.6321 rise=1 >/dev/null
     let pc = (taurise / 1e5) * 1e15
     meas tran taufall trig v(routn) val=0.99 fall=1 targ v(routn) val=0.3679 fall=1 >/dev/null
@@ -39,7 +42,7 @@ cap vout 0 {cload}
     echo "pmos (rc)           =  $&pc fF" 
     echo "nmos (rc)           =  $&nc  fF" 
    
-    * ===== integral =====
+    * ========== inte ==========
     meas tran fallcharge integ i(vn) from=0 to=0.2ns >/dev/null
     let nc = (fallcharge / 1.0) * 1e15
     meas tran risecharge integ i(vp) from=0.4ns to=0.6ns >/dev/null
@@ -47,16 +50,16 @@ cap vout 0 {cload}
     echo "pmos (integral)     =  $&pc fF"
     echo "nmos (integral)     =  $&nc fF"
 
-    * ===== equation =====
+    * ========== eq ==========
     let pc = (((3.9 * 8.854 * 1e-12) / (2.15 * 1e-9)) * 360 * 1e-9 * 90 * 1e-9) * 1e15
     let nc = (((3.9 * 8.854 * 1e-12) / (2.05 * 1e-9)) * 180 * 1e-9 * 90 * 1e-9) * 1e15
     echo "pmos (equation)     =  $&pc fF"
     echo "nmos (equation)     =  $&nc fF"
-    
-    * ===== cin avg =====
+
+    * ========== avg cin ==========
     echo "cin                 =  0.98090  fF"
     
-    * ===== delays =====
+    * ========== delays ==========
     meas tran tplhs trig v(in) val=0.5 fall=1 targ v(out) val=0.5 rise=1 >/dev/null
     meas tran tphls trig v(in) val=0.5 rise=1 targ v(out) val=0.5 fall=1 >/dev/null
     meas tran tfs trig v(out) val=0.9 fall=1 targ v(out) val=0.1 fall=1 >/dev/null
@@ -72,7 +75,7 @@ cap vout 0 {cload}
     echo "tf                  =  $&tf ps"
     echo "tr                  =  $&tr ps"
     
-    * ===== power =====
+    * ========== power ==========
     let pow = v(vdd) * i(vdd)
     meas tran energy integ pow from=0 to=1ns >/dev/null
     let totalpow = -energy * (1 / 1e-9) * 1e6
@@ -84,10 +87,41 @@ cap vout 0 {cload}
     let loadpow = -(loadshtckt - shtckt) * (1 / 1e-9) * 1e6
     echo "short-circuit       =  $&shtcktpow  μW"
     echo "load                =  $&loadpow  μW"
+    
+    * ########## dc ##########
+    dc vin 0 1 0.001
+    
+    * ========== deriv ==========
+    let dvout = deriv(v(out))
+    
+    * ========== vil ==========
+    meas dc vil when dvout=-1 fall=1 >/dev/null
 
-    * ===== plot =====
-    * plot v(in) v(out)
-    * plot i(vdd) i(vout)
-    plot v(rin) v(rcout)
+    * ========== vih ==========
+    meas dc vih when dvout=-1 rise=1 >/dev/null
+
+    * ========== vol ==========
+    meas dc vol find v(out) when dvout=-1 rise=1 >/dev/null
+
+    * ========== voh ==========
+    meas dc voh find v(out) when dvout=-1 fall=1 >/dev/null
+
+    * ========== nm ==========
+    let nml = vil - vol
+    let nmh = voh - vih
+    echo "vil = $&vil V"
+    echo "vih = $&vih V"
+    echo "vol = $&vol V"
+    echo "voh = $&voh V"
+    echo "nml  = $&nml V"
+    echo "nmh = $&nmh V"
+
+    * ========== plot ==========
+    plot v(out) vs v(in) xlabel 'v(in)' ylabel 'v(out)' title 'dc sweep analysis'
+    plot v(in) vs v(out)
+   
+    * análise DC
+    * margens de ruídos
+
 .endc
 .end
