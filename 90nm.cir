@@ -31,35 +31,26 @@ cap vout 0 {cload}
 .control
     set nounits
     
-    * ########## tran ##########
+    * ================================================================================
+    
     tran 100fs 1ns
-
-    * ========== rc ==========
     meas tran taurise trig v(routp) val=0.01 rise=1 targ v(routp) val=0.6321 rise=1 >/dev/null
     let pc = (taurise / 1e5) * 1e15
     meas tran taufall trig v(routn) val=0.99 fall=1 targ v(routn) val=0.3679 fall=1 >/dev/null
     let nc = (taufall / 1e5) * 1e15
     echo "pmos (rc)           =  $&pc fF" 
-    echo "nmos (rc)           =  $&nc  fF" 
-   
-    * ========== inte ==========
+    echo "nmos (rc)           =  $&nc fF" 
     meas tran fallcharge integ i(vn) from=0 to=0.2ns >/dev/null
     let nc = (fallcharge / 1.0) * 1e15
     meas tran risecharge integ i(vp) from=0.4ns to=0.6ns >/dev/null
     let pc = -(risecharge / 1.0) * 1e15
     echo "pmos (integral)     =  $&pc fF"
-    echo "nmos (integral)     =  $&nc fF"
-
-    * ========== eq ==========
+    echo "nmos (integral)     =  $&nc  fF"
     let pc = (((3.9 * 8.854 * 1e-12) / (2.15 * 1e-9)) * 360 * 1e-9 * 90 * 1e-9) * 1e15
     let nc = (((3.9 * 8.854 * 1e-12) / (2.05 * 1e-9)) * 180 * 1e-9 * 90 * 1e-9) * 1e15
     echo "pmos (equation)     =  $&pc fF"
     echo "nmos (equation)     =  $&nc fF"
-
-    * ========== avg cin ==========
     echo "cin                 =  0.98090  fF"
-    
-    * ========== delays ==========
     meas tran tplhs trig v(in) val=0.5 fall=1 targ v(out) val=0.5 rise=1 >/dev/null
     meas tran tphls trig v(in) val=0.5 rise=1 targ v(out) val=0.5 fall=1 >/dev/null
     meas tran tfs trig v(out) val=0.9 fall=1 targ v(out) val=0.1 fall=1 >/dev/null
@@ -69,17 +60,17 @@ cap vout 0 {cload}
     let tphl = tphls * 1e12
     let tf = tfs * 1e12
     let tr = trs * 1e12
-    echo "tplh                =  $&tplh ps"
-    echo "tphl                =  $&tphl ps"
-    echo "td                  =  $&td ps"
-    echo "tf                  =  $&tf ps"
-    echo "tr                  =  $&tr ps"
+    echo "tplh                =  $&tplh  ps"
+    echo "tphl                =  $&tphl  ps"
+    echo "td                  =  $&td  ps"
+    echo "tf                  =  $&tf  ps"
+    echo "tr                  =  $&tr  ps"
     
-    * ========== power ==========
+    * ================================================================================
     let pow = v(vdd) * i(vdd)
     meas tran energy integ pow from=0 to=1ns >/dev/null
     let totalpow = -energy * (1 / 1e-9) * 1e6
-    echo "total               =  $&totalpow  μW"
+    echo "total               =  $&totalpow   μW"
     
     meas tran shtckt integ i(vdd) from=0.018ns to=0.114ns >/dev/null
     meas tran loadshtckt integ i(vdd) from=0.511ns to=0.714ns >/dev/null
@@ -88,37 +79,32 @@ cap vout 0 {cload}
     echo "short-circuit       =  $&shtcktpow  μW"
     echo "load                =  $&loadpow  μW"
     
-    * ########## dc ##########
+    * ================================================================================
+    
     dc vin 0 1 0.001
-    
-    * ========== deriv ==========
     let dvout = deriv(v(out))
-    
-    * ========== vil ==========
-    meas dc vil when dvout=-1 fall=1 >/dev/null
-
-    * ========== vih ==========
-    meas dc vih when dvout=-1 rise=1 >/dev/null
-
-    * ========== vol ==========
+    meas dc vil find v(in) when dvout=-1 fall=1 >/dev/null
+    meas dc vih find v(in) when dvout=-1 rise=1 >/dev/null
     meas dc vol find v(out) when dvout=-1 rise=1 >/dev/null
-
-    * ========== voh ==========
     meas dc voh find v(out) when dvout=-1 fall=1 >/dev/null
-
-    * ========== nm ==========
     let nml = vil - vol
     let nmh = voh - vih
-    echo "vil = $&vil V"
-    echo "vih = $&vih V"
-    echo "vol = $&vol V"
-    echo "voh = $&voh V"
-    echo "nml  = $&nml V"
-    echo "nmh = $&nmh V"
+    echo "vil                 = $&vil  V"
+    echo "vih                 = $&vih  V"
+    echo "vol                 = $&vol  V"
+    echo "voh                 = $&voh  V"
+    echo "nml                 = $&nml  V"
+    echo "nmh                 = $&nmh  V"
 
-    * ========== plot ==========
-    plot v(out) vs v(in) xlabel 'v(in)' ylabel 'v(out)' title 'dc sweep analysis'
-    plot v(in) vs v(out)
+    let nstatpow = -i(vdd)[0] * 1 * 1e6
+    let pstatpow = -i(vdd)[1000] * 1 * 1e6
+    let statpow = nstatpow + pstatpow
+    echo "static              = $&statpow μW"
+
+    * ================================================================================
+    
+    * plot v(out) vs v(in) xlabel 'v(in)' ylabel 'v(out)' title 'dc sweep analysis'
+    * plot v(in) vs v(out)
    
     * análise DC
     * margens de ruídos
