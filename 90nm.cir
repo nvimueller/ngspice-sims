@@ -100,10 +100,12 @@ cap vout 0 {cload}
     let pstatpow = -i(vdd)[1000] * 1 * 1e6
     let statpow = nstatpow + pstatpow
     echo "static              = $&statpow μW"
-
+    echo "pmos static         = $&pstatpow μW"
+    echo "nmos static         = $&nstatpow μW"
+    
     * ================================================================================
     
-    * plot v(out) vs v(in) xlabel 'v(in)' ylabel 'v(out)' title 'dc sweep analysis'
+    plot v(out) vs v(in) xlabel 'v(in)' ylabel 'v(out)' title 'dc sweep analysis'
     * plot v(in) vs v(out)
    
     * análise DC
